@@ -36,14 +36,14 @@ def authorize_existing_user(access_key_param, access_key_secret_param):
 
 def get_oa2_client(access_key_param, access_secret_key):
     consumer_key, consumer_key_secret, bearer_token = get_keys()
-    client = tweepy.Client(
+    new_client = tweepy.Client(
         consumer_key=consumer_key,
         consumer_secret=consumer_key_secret,
         bearer_token=bearer_token,
         access_token=access_key_param,
         access_token_secret=access_secret_key
     )
-    return client
+    return new_client
 
 
 if __name__ == '__main__':
