@@ -7,7 +7,8 @@ import tweepy
 
 def get_keys():
     # Returns Consumer_API_Key, Consumer_API_Secret_Key, Bearer_Token (Must be set as environment variables.)
-    return os.environ.get("consumer_key"), os.environ.get("consumer_key_secret"), os.environ.get("bearer_token")
+    return str(os.environ.get("consumer_key")), str(os.environ.get("consumer_key_secret")), \
+           str(os.environ.get("bearer_token"))
 
 
 def authorize_new_user(callback_uri="oob", should_print_access_credentials=False):
@@ -46,8 +47,10 @@ def get_oa2_client(access_key_param, access_secret_key):
 
 
 if __name__ == '__main__':
-    api, access_key, access_key_secret = authorize_new_user()  # Use once to get access tokens
-    api = get_oa2_client(access_key, access_key_secret)
+    access_key, access_key_secret = str(os.environ.get("user_access_key")), str(os.environ.get("user_access_secret"))
+    if (access_key == "None") or (access_key_secret == "None"):
+        api, access_key, access_key_secret = authorize_new_user()  # Use once to get access token
+    client = get_oa2_client(access_key, access_key_secret)
 
     # Write your code here
 
