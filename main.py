@@ -1,8 +1,8 @@
 import os
 import time
+import webbrowser
 
 import tweepy
-import webbrowser
 
 
 def get_keys():
@@ -33,7 +33,7 @@ def authorize_existing_user(access_key_param, access_key_secret_param):
     return new_api
 
 
-def getOA2Client(access_key_param, access_secret_key):
+def get_oa2_client(access_key_param, access_secret_key):
     consumer_key, consumer_key_secret, bearer_token = get_keys()
     client = tweepy.Client(
         consumer_key=consumer_key,
@@ -47,7 +47,7 @@ def getOA2Client(access_key_param, access_secret_key):
 
 if __name__ == '__main__':
     api, access_key, access_key_secret = authorize_new_user()  # Use once to get access tokens
-    api = getOA2Client(access_key, access_key_secret)
+    api = get_oa2_client(access_key, access_key_secret)
 
     # Write your code here
 
