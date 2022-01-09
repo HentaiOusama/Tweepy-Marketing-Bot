@@ -49,7 +49,17 @@ class TwitterClient:
                                     user.public_metrics["following_count"], False, False, 0)
             user_list.append(current_user)
 
-        return user_list, response.meta.get("previous_token"), response.meta.get("next_token")
+        return user_list, response.meta.get("previous_token", ""), response.meta.get("next_token", "")
+
+    def get_follower_and_store(self, user_id: int, pagination_token: str | None = None):
+        user_list, next_token, previous_token = \
+            self.get_user_followers(user_id=user_id, pagination_token=pagination_token)
+
+        self.db_handler.store_follow_account_info(user_id, next_token, previous_token)
+        for user in user_list:
+            self.db_handler.store_user_info(user)
+
+        return next_token
 
     def like_and_retweet(self, tweet_id: int | str, should_like, should_retweet=False,
                          should_quote_tweet=False, quote_text=""):

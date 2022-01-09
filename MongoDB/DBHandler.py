@@ -42,3 +42,29 @@ class DBHandler:
         }
 
         self.database["UserData"].update_one(find_user_object, store_user_object, upsert=True)
+
+    def get_follow_account_info(self, user_id):
+        found_document = self.database["FollowAccounts"].find_one({"userId": user_id})
+        if found_document:
+            return {
+                "userId": user_id,
+                "nextToken": found_document["nextToken"],
+                "previousToken": found_document["previousToken"]
+            }
+        else:
+            return None
+
+    def store_follow_account_info(self, user_id: int, previous_token: str | None = None,
+                                  next_token: str | None = None):
+        find_document = {
+            "userId": user_id
+        }
+        store_doc = {
+            "userId": user_id
+        }
+        if previous_token is not None and previous_token != "":
+            store_doc["previousToken"] = previous_token
+        if next_token is not None and next_token != "":
+            store_doc["nextToken"] = next_token
+
+        self.database["FollowAccounts"].update_one(find_document, store_doc, upsert=True)
