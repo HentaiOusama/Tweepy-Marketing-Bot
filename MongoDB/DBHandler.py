@@ -10,11 +10,15 @@ class DBHandler:
         self.cluster = pymongo.MongoClient(connect_url)
         self.database = self.cluster[database_name]
 
-    def get_user(self, user_id: int | None = None, username: str | None = None):
+    def get_user(self, user_id: int | None = None, username: str | None = None) -> UserData | None:
         if user_id is not None:
-            return self.database["UserData"].find_one({"userId": user_id})
+            response = self.database["UserData"].find_one({"userId": user_id})
+            return UserData(response["userId"], response["username"],
+                            response["followersCount"], response["followingCount"])
         elif username is not None:
-            return self.database["UserData"].find_one({"username": username})
+            response = self.database["UserData"].find_one({"username": username})
+            return UserData(response["userId"], response["username"],
+                            response["followersCount"], response["followingCount"])
         else:
             return None
 

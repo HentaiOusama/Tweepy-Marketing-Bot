@@ -32,17 +32,22 @@ class TwitterClient:
             return user
 
     def get_user_followers(self, user_id: int | None = None, username: str | None = None,
-                           max_count: int = 1000, pagination_token=None):
+                           max_results: int = 1000, pagination_token=None):
         if user_id is None:
             user_id = self.get_user_details(username=username).userId
-
         if pagination_token is None:
-            response = self.client.get_users_followers(id=user_id, max_results=1000, max_count=max_count)
+            response = self.client.get_users_followers(id=user_id, max_results=max_results,
+                                                       user_fields=["public_metrics"])
         else:
-            response = self.client.get_users_followers(id=user_id, max_results=1000, max_count=max_count,
+            response = self.client.get_users_followers(id=user_id, max_results=max_results,
+                                                       user_fields=["public_metrics"],
                                                        pagination_token=pagination_token)
 
-        return response.data, response.meta.get("previous_token"), response.meta.get("next_token")
+        user_list = []
+        for user in response.data:
+            user_list.append(UserData(user.id, user.username, user.public_metrics["followers_count"],
+                                      user.public_metrics["following_count"]))
+        return user_list, response.meta.get("previous_token"), response.meta.get("next_token")
 
     def like_and_retweet(self, tweet_id: int | str, should_like, should_retweet=False,
                          should_quote_tweet=False, quote_text=""):
