@@ -28,14 +28,15 @@ def initialize_client():
         t_api.authorize_new_user()
         ak, aks = t_api.auth.access_token, t_api.auth.access_token_secret
     t_cli = TwitterClient(consumer_key=ck, consumer_key_secret=cks, bearer_token=bt,
-                          access_key=ak, access_secret_key=aks)
-    return t_cli, db_handler
+                          access_key=ak, access_secret_key=aks, db_handler=db_handler)
+    return t_cli
 
 
 if __name__ == '__main__':
-    tCli, dbHandler = initialize_client()
+    tCli = initialize_client()
 
     # Write your code here
 
+    print("Waiting 2.5 secs before exit...")
     time.sleep(2.5)
-    print("Exiting Program...")
+    print("Script Exited")
