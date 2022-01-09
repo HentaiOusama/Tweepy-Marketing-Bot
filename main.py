@@ -17,6 +17,7 @@ if __name__ == '__main__':
     ck, cks, bt, ak, aks = get_keys()
     if (ak == "None") or (aks == "None"):
         tAPI = TwitterAPI(consumer_key=ck, consumer_key_secret=cks)
+        tAPI.authorize_new_user()
         ak, aks = tAPI.auth.access_token, tAPI.auth.access_token_secret
     tCli = TwitterClient(consumer_key=ck, consumer_key_secret=cks, bearer_token=bt,
                          access_key=ak, access_secret_key=aks)
