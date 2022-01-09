@@ -17,23 +17,26 @@ class DBHandler:
             response = self.database["UserData"].find_one({"userId": user_id})
             return UserData(response["userId"], response["username"],
                             response["followersCount"], response["followingCount"],
-                            response["didFollow"], response["areFollowing"])
+                            response["didFollow"], response["areFollowing"],
+                            response["followTime"])
         elif username is not None:
             response = self.database["UserData"].find_one({"username": username})
             return UserData(response["userId"], response["username"],
                             response["followersCount"], response["followingCount"],
-                            response["didFollow"], response["areFollowing"])
+                            response["didFollow"], response["areFollowing"],
+                            response["followTime"])
         else:
             return None
 
-    def store_user_info(self, user_data: UserData, should_delete_following_status: bool = False):
+    def store_user_info(self, user_data: UserData, should_remove_optional_data: bool = False):
         find_user_object = {
             "userId": user_data.userId
         }
         data_object = copy.deepcopy(user_data.__dict__)
-        if should_delete_following_status:
+        if should_remove_optional_data:
             del data_object["didFollow"]
             del data_object["areFollowing"]
+            del data_object["followTime"]
         store_user_object = {
             "$set": data_object
         }

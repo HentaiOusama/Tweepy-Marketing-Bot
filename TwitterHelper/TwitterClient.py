@@ -27,12 +27,12 @@ class TwitterClient:
                 user = self.client.get_user(username=username, user_fields=["public_metrics"])
 
             user = UserData(user.data.id, user.data.username, user.data.public_metrics["followers_count"],
-                            user.data.public_metrics["following_count"], False, False)
+                            user.data.public_metrics["following_count"], False, False, 0)
             self.db_handler.store_user_info(user)
             return user
 
     def get_user_followers(self, user_id: int | None = None, username: str | None = None,
-                           max_results: int = 1000, pagination_token=None, should_store=True):
+                           max_results: int = 1000, pagination_token=None):
         if user_id is None:
             user_id = self.get_user_details(username=username).userId
         if pagination_token is None:
@@ -46,10 +46,8 @@ class TwitterClient:
         user_list = []
         for user in response.data:
             current_user = UserData(user.id, user.username, user.public_metrics["followers_count"],
-                                    user.public_metrics["following_count"], False, False)
+                                    user.public_metrics["following_count"], False, False, 0)
             user_list.append(current_user)
-            if should_store:
-                self.db_handler.store_user_info(current_user, should_delete_following_status=True)
 
         return user_list, response.meta.get("previous_token"), response.meta.get("next_token")
 
