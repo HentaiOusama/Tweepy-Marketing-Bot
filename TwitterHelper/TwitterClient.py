@@ -11,14 +11,17 @@ class TwitterClient:
             access_token_secret=access_secret_key
         )
 
-    def get_user_id(self, username: str) -> int:
-        user = self.client.get_user(username=username)
-        return user.data.id
+    def get_user_details(self, user_id: int | None = None, username: str | None = None):
+        if user_id is not None:
+            user = self.client.get_user(id=user_id, user_fields=["public_metrics"])
+        else:
+            user = self.client.get_user(username=username, user_fields=["public_metrics"])
+        return user.data
 
     def get_user_followers(self, user_id: int | None = None, username: str = "", max_count: int = 1000,
                            pagination_token=None):
         if user_id is None:
-            user_id = self.get_user_id(username)
+            user_id = self.get_user_details(username=username).id
 
         if pagination_token is None:
             response = self.client.get_users_followers(id=user_id, max_results=1000, max_count=max_count)
@@ -43,18 +46,15 @@ class TwitterClient:
         if should_unretweet:
             self.client.unretweet(tweet_id)
 
-    def follow_user(self, user_id: int, threshold: int | None = None):
+    def follow_user(self, user_id: int | None = None, username: str | None = None, threshold: int | None = None):
         if threshold is not None:
-            followers, prev_token, next_token = self.get_user_followers(user_id)
-            follow_len = len(followers)
-            while next_token is not None:
-                followers, prev_token, next_token = self.get_user_followers(user_id, pagination_token=next_token)
-                follow_len += len(followers)
-                if follow_len > threshold:
-                    break
-
-            if follow_len > threshold:
+            user_data = self.get_user_details(user_id=user_id, username=username)
+            user_id = user_data.id
+            if user_data.public_metrics["followers_count"] > threshold:
                 return False
+
+        if user_id is None:
+            user_id = self.get_user_details(user_id=user_id, username=username).id
 
         self.client.follow_user(target_user_id=user_id)
         # TODO : Store the user id in database for future reference
