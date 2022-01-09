@@ -71,3 +71,9 @@ class DBHandler:
         }
 
         self.database["FollowAccounts"].update_one(find_document, operation_doc, upsert=True)
+
+    def get_never_followed_users(self):
+        find_doc = {
+            "didFollow": {"$in": [None, False]}
+        }
+        return self.database["UserData"].find(find_doc)

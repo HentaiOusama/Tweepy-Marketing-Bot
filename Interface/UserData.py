@@ -12,5 +12,11 @@ class UserData:
         self.areFollowing: bool = are_following
         self.followTime: int = follow_time
 
+    @staticmethod
+    def initialize_from_object(init_object):
+        return UserData(init_object["userId"], init_object["username"], init_object["followersCount"],
+                        init_object["followingCount"], init_object["didFollow"], init_object["areFollowing"],
+                        init_object["followTime"])
+
     def __repr__(self):
         return json.dumps(self.__dict__)

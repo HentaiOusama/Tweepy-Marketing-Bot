@@ -1,3 +1,5 @@
+import time
+
 import tweepy
 
 from Interface.UserData import UserData
@@ -57,9 +59,24 @@ class TwitterClient:
 
         self.db_handler.store_follow_account_info(user_id, previous_token, next_token)
         for user in user_list:
-            self.db_handler.store_user_info(user)
+            self.db_handler.store_user_info(user, should_remove_optional_data=True)
 
         return next_token
+
+    async def start_fetching_followers(self, user_id: int, max_results: int = 1000,
+                                       max_iteration: int | None = None):
+        account_info = self.db_handler.get_follow_account_info(user_id=user_id)
+        next_token = account_info.get("nextToken") if account_info is not None else None
+        if next_token == "":
+            next_token = None
+        i = 0
+        while True and (max_iteration is not None and i < max_iteration):
+            next_token = self.get_follower_and_store(user_id=user_id, max_results=max_results,
+                                                     pagination_token=next_token)
+            i += 1
+            time.sleep(66)  # Keep it 66 seconds to maintain 15 / 15 min request limit.
+            if next_token is None or next_token == "":
+                break
 
     def like_and_retweet(self, tweet_id: int | str, should_like, should_retweet=False,
                          should_quote_tweet=False, quote_text=""):
@@ -89,6 +106,21 @@ class TwitterClient:
         self.client.follow_user(target_user_id=user_id)
         # TODO : Store the user id in database for future reference
         return True
+
+    async def start_following_users(self, max_iteration: int | None = None):
+        user_list = self.db_handler.get_never_followed_users()
+        i = 0
+        for user in user_list:
+            if self.follow_user(user_id=user["userId"]):
+                user["didFollow"] = True
+                user["areFollowing"] = True
+                user["followTime"] = time.time()
+                user = UserData.initialize_from_object(user)
+                self.db_handler.store_user_info(user)
+                i += 1
+            if max_iteration is not None and i >= max_iteration:
+                break
+            time.sleep(20)  # Keep it 20 to maintain 50 / 15 min request limit
 
     def unfollow_user(self, user_id):
         self.client.unfollow_user(target_user_id=user_id)
