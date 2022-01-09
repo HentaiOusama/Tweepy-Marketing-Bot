@@ -32,6 +32,19 @@ def initialize_client():
     return t_cli
 
 
+def start_fetching_followers(t_client: TwitterClient, user_id: int, max_results: int = 1000):
+    account_info = tCli.db_handler.get_follow_account_info(user_id=user_id)
+    next_token = account_info.get("nextToken") if account_info is not None else None
+    if next_token == "":
+        next_token = None
+    for i in range(2):
+        print(f"Iteration : {i}")
+        next_token = tCli.get_follower_and_store(user_id=user_id, max_results=max_results, pagination_token=next_token)
+        time.sleep(66)  # Keep it 66 seconds to maintain 15 / 15 min request limit.
+        if next_token is None or next_token == "":
+            break
+
+
 if __name__ == '__main__':
     tCli = initialize_client()
 

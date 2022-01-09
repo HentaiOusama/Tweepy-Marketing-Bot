@@ -51,11 +51,11 @@ class TwitterClient:
 
         return user_list, response.meta.get("previous_token", ""), response.meta.get("next_token", "")
 
-    def get_follower_and_store(self, user_id: int, pagination_token: str | None = None):
-        user_list, next_token, previous_token = \
-            self.get_user_followers(user_id=user_id, pagination_token=pagination_token)
+    def get_follower_and_store(self, user_id: int, pagination_token: str | None = None, max_results: int = 1000):
+        user_list, previous_token, next_token = \
+            self.get_user_followers(user_id=user_id, max_results=max_results, pagination_token=pagination_token)
 
-        self.db_handler.store_follow_account_info(user_id, next_token, previous_token)
+        self.db_handler.store_follow_account_info(user_id, previous_token, next_token)
         for user in user_list:
             self.db_handler.store_user_info(user)
 

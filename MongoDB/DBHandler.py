@@ -66,5 +66,8 @@ class DBHandler:
             store_doc["previousToken"] = previous_token
         if next_token is not None and next_token != "":
             store_doc["nextToken"] = next_token
+        operation_doc = {
+            "$set": store_doc
+        }
 
-        self.database["FollowAccounts"].update_one(find_document, store_doc, upsert=True)
+        self.database["FollowAccounts"].update_one(find_document, operation_doc, upsert=True)
