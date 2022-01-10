@@ -1,13 +1,10 @@
-import asyncio
 import os
+import threading
 import time
 
 from MongoDB.DBHandler import DBHandler
 from TwitterHelper.TwitterAPI import TwitterAPI
 from TwitterHelper.TwitterClient import TwitterClient
-
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
 
 
 def get_mongo_keys():
@@ -36,27 +33,38 @@ def initialize_client():
     return t_cli
 
 
-async def early_use_function():
+def continuous_follower():
     end_time = time.time() + (23 * 60 * 60)  # Current Time + 23 hours
+    follow_threshold = os.environ.get("followersThreshold", None)
+    if follow_threshold is not None:
+        follow_threshold = int(follow_threshold)
+
+    while time.time() < end_time:
+        print("Pre Follow")
+        tCli.start_following_users(threshold=follow_threshold)
+        print("Post Follow")
+    tCli.set_should_fetch_followers(False)
+    tCli.set_should_follow_users(False)
+
+
+def early_use_function():
     user_id = os.environ.get("followUserId", None)
     if user_id is not None:
         user_id = int(user_id)
     else:
         return
-    follow_threshold = os.environ.get("followersThreshold", None)
-    if follow_threshold is not None:
-        follow_threshold = int(follow_threshold)
 
-    async def continuous_loop():
-        while time.time() < end_time:
-            print("Pre Follow")
-            await tCli.start_following_users(threshold=follow_threshold)
-            print("Post Follow")
-
-    task_1 = loop.create_task(tCli.start_fetching_followers(user_id))
-    task_2 = loop.create_task(continuous_loop())
+    thread1 = threading.Thread(target=tCli.start_fetching_followers, args=[user_id])
+    thread2 = threading.Thread(target=continuous_follower)
     print("Stating Both Tasks...")
-    await asyncio.gather(task_1, task_2)
+    thread1.start()
+    thread2.start()
+
+    while thread2.is_alive():
+        time.sleep(15 * 60)
+
+    if thread1.is_alive():
+        thread1.join()
     print("Both Tasks Ended...")
 
 
@@ -64,7 +72,7 @@ if __name__ == '__main__':
     tCli = initialize_client()
 
     # Write your code here
-    loop.run_until_complete(early_use_function())
+    early_use_function()
 
     print("Waiting 2.5 secs before exit...")
     time.sleep(2.5)

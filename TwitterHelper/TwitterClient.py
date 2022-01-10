@@ -1,4 +1,3 @@
-import asyncio
 import time
 
 import tweepy
@@ -72,8 +71,8 @@ class TwitterClient:
 
         return next_token
 
-    async def start_fetching_followers(self, user_id: int, max_results: int = 1000,
-                                       max_iteration: int | None = None):
+    def start_fetching_followers(self, user_id: int, max_results: int = 1000,
+                                 max_iteration: int | None = None):
         if not self.shouldFetchFollowers:
             return
         print(f"Follower Fetch Request for {user_id}")
@@ -89,7 +88,7 @@ class TwitterClient:
                                                      pagination_token=next_token)
             print("Received List of Followers...")
             i += 1
-            await asyncio.sleep(66)  # Keep it 66 seconds to maintain 15 / 15 min request limit.
+            time.sleep(66)  # Keep it 66 seconds to maintain 15 / 15 min request limit.
             if next_token is None or next_token == "":
                 break
 
@@ -124,7 +123,7 @@ class TwitterClient:
         self.client.follow_user(target_user_id=user_id)
         return True
 
-    async def start_following_users(self, max_iteration: int | None = None, threshold: int | None = None):
+    def start_following_users(self, max_iteration: int | None = None, threshold: int | None = None):
         if not self.shouldFollowUsers:
             return
         user_list = self.db_handler.get_never_followed_users(max_followers_threshold=threshold)
@@ -139,7 +138,7 @@ class TwitterClient:
                 i += 1
             if max_iteration is not None and i >= max_iteration:
                 break
-            await asyncio.sleep(20)  # Keep it 20 to maintain 50 / 15 min request limit
+            time.sleep(20)  # Keep it 20 to maintain 50 / 15 min request limit
 
         if i == 0:
             print("No users to follow...")
