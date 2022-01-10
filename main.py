@@ -56,6 +56,7 @@ if __name__ == '__main__':
     tCli = initialize_client()
 
     # Write your code here
+    early_use_function()
 
     print("Waiting 2.5 secs before exit...")
     time.sleep(2.5)
