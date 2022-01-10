@@ -36,7 +36,7 @@ def initialize_client():
     return t_cli
 
 
-def early_use_function():
+async def early_use_function():
     end_time = time.time() + (23 * 60 * 60)  # Current Time + 23 hours
     user_id = os.environ.get("followUserId", None)
     if user_id is not None:
@@ -47,16 +47,24 @@ def early_use_function():
     if follow_threshold is not None:
         follow_threshold = int(follow_threshold)
 
-    tCli.start_fetching_followers(user_id)
-    while time.time() < end_time:
-        loop.run_until_complete(tCli.start_following_users(threshold=follow_threshold))
+    async def continuous_loop():
+        while time.time() < end_time:
+            print("Pre Follow")
+            await tCli.start_following_users(threshold=follow_threshold)
+            print("Post Follow")
+
+    task_1 = loop.create_task(tCli.start_fetching_followers(user_id))
+    task_2 = loop.create_task(continuous_loop())
+    print("Stating Both Tasks...")
+    await asyncio.gather(task_1, task_2)
+    print("Both Tasks Ended...")
 
 
 if __name__ == '__main__':
     tCli = initialize_client()
 
     # Write your code here
-    early_use_function()
+    loop.run_until_complete(early_use_function())
 
     print("Waiting 2.5 secs before exit...")
     time.sleep(2.5)

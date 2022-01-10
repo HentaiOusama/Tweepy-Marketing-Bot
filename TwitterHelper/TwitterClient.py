@@ -76,16 +76,18 @@ class TwitterClient:
                                        max_iteration: int | None = None):
         if not self.shouldFetchFollowers:
             return
+        print(f"Follower Fetch Request for {user_id}")
         account_info = self.db_handler.get_follow_account_info(user_id=user_id)
         next_token = account_info.get("nextToken") if account_info is not None else None
         if next_token == "":
             next_token = None
         i = 0
-        while True and (max_iteration is not None and i < max_iteration):
+        while True and (max_iteration is None or i < max_iteration):
             if not self.shouldFetchFollowers:
                 break
             next_token = self.get_follower_and_store(user_id=user_id, max_results=max_results,
                                                      pagination_token=next_token)
+            print("Received List of Followers...")
             i += 1
             await asyncio.sleep(66)  # Keep it 66 seconds to maintain 15 / 15 min request limit.
             if next_token is None or next_token == "":
@@ -120,7 +122,6 @@ class TwitterClient:
             user_id = self.get_user_details(user_id=user_id, username=username).userId
 
         self.client.follow_user(target_user_id=user_id)
-        # TODO : Store the user id in database for future reference
         return True
 
     async def start_following_users(self, max_iteration: int | None = None, threshold: int | None = None):
@@ -141,6 +142,7 @@ class TwitterClient:
             await asyncio.sleep(20)  # Keep it 20 to maintain 50 / 15 min request limit
 
         if i == 0:
+            print("No users to follow...")
             time.sleep(70)
 
     def unfollow_user(self, user_id):
