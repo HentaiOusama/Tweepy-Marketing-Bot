@@ -17,6 +17,14 @@ class TwitterClient:
             access_token=access_key,
             access_token_secret=access_secret_key
         )
+        self.shouldFetchFollowers = True
+        self.shouldFollowUsers = True
+
+    def set_should_fetch_followers(self, value: bool):
+        self.shouldFetchFollowers = value
+
+    def set_should_follow_users(self, value: bool):
+        self.shouldFollowUsers = value
 
     def get_user_details(self, user_id: int | None = None, username: str | None = None, search_db=True) -> UserData:
         user = self.db_handler.get_user(user_id, username)
@@ -65,12 +73,16 @@ class TwitterClient:
 
     async def start_fetching_followers(self, user_id: int, max_results: int = 1000,
                                        max_iteration: int | None = None):
+        if not self.shouldFetchFollowers:
+            return
         account_info = self.db_handler.get_follow_account_info(user_id=user_id)
         next_token = account_info.get("nextToken") if account_info is not None else None
         if next_token == "":
             next_token = None
         i = 0
         while True and (max_iteration is not None and i < max_iteration):
+            if not self.shouldFetchFollowers:
+                break
             next_token = self.get_follower_and_store(user_id=user_id, max_results=max_results,
                                                      pagination_token=next_token)
             i += 1
@@ -108,7 +120,12 @@ class TwitterClient:
         return True
 
     async def start_following_users(self, max_iteration: int | None = None):
+        if not self.shouldFollowUsers:
+            return
         user_list = self.db_handler.get_never_followed_users()
+        if len(user_list) == 0:
+            time.sleep(70)
+            return
         i = 0
         for user in user_list:
             if self.follow_user(user_id=user["userId"]):
