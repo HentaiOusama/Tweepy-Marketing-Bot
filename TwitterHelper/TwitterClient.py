@@ -126,10 +126,7 @@ class TwitterClient:
     async def start_following_users(self, max_iteration: int | None = None, threshold: int | None = None):
         if not self.shouldFollowUsers:
             return
-        user_list = self.db_handler.get_never_followed_users()
-        if len(user_list) == 0:
-            time.sleep(70)
-            return
+        user_list = self.db_handler.get_never_followed_users(max_followers_threshold=threshold)
         i = 0
         for user in user_list:
             user["didFollow"] = True
@@ -142,6 +139,9 @@ class TwitterClient:
             if max_iteration is not None and i >= max_iteration:
                 break
             await asyncio.sleep(20)  # Keep it 20 to maintain 50 / 15 min request limit
+
+        if i == 0:
+            time.sleep(70)
 
     def unfollow_user(self, user_id):
         self.client.unfollow_user(target_user_id=user_id)

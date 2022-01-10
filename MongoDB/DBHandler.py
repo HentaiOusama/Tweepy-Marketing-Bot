@@ -72,8 +72,10 @@ class DBHandler:
 
         self.database["FollowAccounts"].update_one(find_document, operation_doc, upsert=True)
 
-    def get_never_followed_users(self):
+    def get_never_followed_users(self, max_followers_threshold: int | None = None):
         find_doc = {
             "didFollow": {"$in": [None, False]}
         }
+        if max_followers_threshold is not None:
+            find_doc["followersCount"] = {"$lte": max_followers_threshold}
         return self.database["UserData"].find(find_doc)
