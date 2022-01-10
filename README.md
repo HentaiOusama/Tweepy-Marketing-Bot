@@ -26,6 +26,8 @@ MongoDB: -
 <ul>
 <li><code>user_access_key</code></li>
 <li><code>user_access_secret</code></li>
+<li><code>followUserId</code></li>
+<li><code>followersThreshold</code></li>
 </ul>
 
 # How to run: -

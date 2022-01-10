@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 import tweepy
@@ -86,7 +87,7 @@ class TwitterClient:
             next_token = self.get_follower_and_store(user_id=user_id, max_results=max_results,
                                                      pagination_token=next_token)
             i += 1
-            time.sleep(66)  # Keep it 66 seconds to maintain 15 / 15 min request limit.
+            await asyncio.sleep(66)  # Keep it 66 seconds to maintain 15 / 15 min request limit.
             if next_token is None or next_token == "":
                 break
 
@@ -105,9 +106,12 @@ class TwitterClient:
         if should_unretweet:
             self.client.unretweet(tweet_id)
 
-    def follow_user(self, user_id: int | None = None, username: str | None = None, threshold: int | None = None):
+    def follow_user(self, user_id: int | None = None, username: str | None = None, user_data: UserData | None = None,
+                    threshold: int | None = None):
         if threshold is not None:
-            user_data = self.get_user_details(user_id=user_id, username=username)
+            if user_data is None:
+                user_data = self.get_user_details(user_id=user_id, username=username)
+
             user_id = user_data.userId
             if user_data.followersCount > threshold:
                 return False
@@ -119,7 +123,7 @@ class TwitterClient:
         # TODO : Store the user id in database for future reference
         return True
 
-    async def start_following_users(self, max_iteration: int | None = None):
+    async def start_following_users(self, max_iteration: int | None = None, threshold: int | None = None):
         if not self.shouldFollowUsers:
             return
         user_list = self.db_handler.get_never_followed_users()
@@ -128,16 +132,16 @@ class TwitterClient:
             return
         i = 0
         for user in user_list:
-            if self.follow_user(user_id=user["userId"]):
-                user["didFollow"] = True
-                user["areFollowing"] = True
-                user["followTime"] = time.time()
-                user = UserData.initialize_from_object(user)
+            user["didFollow"] = True
+            user["areFollowing"] = True
+            user["followTime"] = time.time()
+            user = UserData.initialize_from_object(user)
+            if self.follow_user(user_id=user.userId, threshold=threshold, user_data=user):
                 self.db_handler.store_user_info(user)
                 i += 1
             if max_iteration is not None and i >= max_iteration:
                 break
-            time.sleep(20)  # Keep it 20 to maintain 50 / 15 min request limit
+            await asyncio.sleep(20)  # Keep it 20 to maintain 50 / 15 min request limit
 
     def unfollow_user(self, user_id):
         self.client.unfollow_user(target_user_id=user_id)

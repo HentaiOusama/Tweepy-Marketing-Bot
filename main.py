@@ -1,9 +1,13 @@
+import asyncio
 import os
 import time
 
 from MongoDB.DBHandler import DBHandler
 from TwitterHelper.TwitterAPI import TwitterAPI
 from TwitterHelper.TwitterClient import TwitterClient
+
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
 
 def get_mongo_keys():
@@ -32,17 +36,20 @@ def initialize_client():
     return t_cli
 
 
-def start_fetching_followers(t_client: TwitterClient, user_id: int, max_results: int = 1000):
-    account_info = tCli.db_handler.get_follow_account_info(user_id=user_id)
-    next_token = account_info.get("nextToken") if account_info is not None else None
-    if next_token == "":
-        next_token = None
-    for i in range(2):
-        print(f"Iteration : {i}")
-        next_token = tCli.get_follower_and_store(user_id=user_id, max_results=max_results, pagination_token=next_token)
-        time.sleep(66)  # Keep it 66 seconds to maintain 15 / 15 min request limit.
-        if next_token is None or next_token == "":
-            break
+def early_use_function():
+    end_time = time.time() + (23 * 60 * 60)  # Current Time + 23 hours
+    user_id = os.environ.get("followUserId", None)
+    if user_id is not None:
+        user_id = int(user_id)
+    else:
+        return
+    follow_threshold = os.environ.get("followersThreshold", None)
+    if follow_threshold is not None:
+        follow_threshold = int(follow_threshold)
+
+    tCli.start_fetching_followers(user_id)
+    while time.time() < end_time:
+        loop.run_until_complete(tCli.start_following_users(threshold=follow_threshold))
 
 
 if __name__ == '__main__':
