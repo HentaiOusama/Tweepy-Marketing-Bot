@@ -41,7 +41,10 @@ def continuous_follower():
 
     while time.time() < end_time:
         print("Pre Follow")
-        tCli.start_following_users(threshold=follow_threshold)
+        try:
+            tCli.start_following_users(threshold=follow_threshold)
+        except Exception as err:
+            print(err)
         print("Post Follow")
     tCli.set_should_fetch_followers(False)
     tCli.set_should_follow_users(False)
@@ -54,17 +57,17 @@ def early_use_function():
     else:
         return
 
-    thread1 = threading.Thread(target=tCli.start_fetching_followers, args=[user_id])
+    # thread1 = threading.Thread(target=tCli.start_fetching_followers, args=[user_id])
     thread2 = threading.Thread(target=continuous_follower)
-    print("Stating Both Tasks...")
-    thread1.start()
+    # print("Stating Both Tasks...")
+    # thread1.start()
     thread2.start()
 
     while thread2.is_alive():
         time.sleep(15 * 60)
 
-    if thread1.is_alive():
-        thread1.join()
+    # if thread1.is_alive():
+    #     thread1.join()
     print("Both Tasks Ended...")
 
 
