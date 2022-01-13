@@ -1,4 +1,5 @@
 import os
+import sys
 import threading
 import time
 
@@ -35,17 +36,17 @@ def initialize_client():
 
 def continuous_follower():
     end_time = time.time() + (23 * 60 * 60)  # Current Time + 23 hours
-    follow_threshold = os.environ.get("followersThreshold", None)
-    if follow_threshold is not None:
-        follow_threshold = int(follow_threshold)
+    min_followers_count = int(os.environ.get("minFollowersCount", 0))
+    max_followers_count = int(os.environ.get("maxFollowersCount", sys.maxsize))
+    min_following_count = int(os.environ.get("minFollowingCount", 0))
 
+    print("Starting to follow users from database")
     while time.time() < end_time:
-        print("Pre Follow")
         try:
-            tCli.start_following_users(threshold=follow_threshold)
+            tCli.start_following_users(min_followers=min_followers_count, max_followers=max_followers_count,
+                                       min_following=min_following_count, end_time=end_time)
         except Exception as err:
             print(err)
-        print("Post Follow")
     tCli.set_should_fetch_followers(False)
     tCli.set_should_follow_users(False)
 

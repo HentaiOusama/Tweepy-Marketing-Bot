@@ -1,3 +1,4 @@
+import sys
 import time
 
 import tweepy
@@ -20,13 +21,14 @@ class TwitterClient:
         self.shouldFetchFollowers = True
         self.shouldFollowUsers = True
 
-    def set_should_fetch_followers(self, value: bool):
+    def set_should_fetch_followers(self, value: bool) -> None:
         self.shouldFetchFollowers = value
 
-    def set_should_follow_users(self, value: bool):
+    def set_should_follow_users(self, value: bool) -> None:
         self.shouldFollowUsers = value
 
-    def get_user_details(self, user_id: int | None = None, username: str | None = None, search_db=True) -> UserData:
+    def get_user_details_from_twitter(self, user_id: int | None = None, username: str | None = None,
+                                      search_db: bool = True) -> UserData:
         user = self.db_handler.get_user(user_id, username)
         if search_db and (user is not None):
             return user
@@ -35,16 +37,17 @@ class TwitterClient:
                 user = self.client.get_user(id=user_id, user_fields=["public_metrics"])
             else:
                 user = self.client.get_user(username=username, user_fields=["public_metrics"])
-
             user = UserData(user.data.id, user.data.username, user.data.public_metrics["followers_count"],
-                            user.data.public_metrics["following_count"], False, False, 0)
-            self.db_handler.store_user_info(user)
+                            user.data.public_metrics["following_count"])
+            self.db_handler.store_user_info(user, ["userId", "username", "followersCount", "followingCount"])
             return user
 
-    def get_user_followers(self, user_id: int | None = None, username: str | None = None,
-                           max_results: int = 1000, pagination_token=None):
+    def get_user_followers_from_twitter(self, user_id: int | None = None, username: str | None = None,
+                                        max_results: int = 1000, pagination_token: str | None = None,
+                                        should_store: bool = False) -> tuple[list[UserData], str, str]:
         if user_id is None:
-            user_id = self.get_user_details(username=username).userId
+            user_id = self.get_user_details_from_twitter(username=username).userId
+
         if pagination_token is None:
             response = self.client.get_users_followers(id=user_id, max_results=max_results,
                                                        user_fields=["public_metrics"])
@@ -56,19 +59,19 @@ class TwitterClient:
         user_list = []
         for user in response.data:
             current_user = UserData(user.id, user.username, user.public_metrics["followers_count"],
-                                    user.public_metrics["following_count"], False, False, 0)
+                                    user.public_metrics["following_count"], user_id)
+            if should_store:
+                self.db_handler.store_user_info(current_user, ["userId", "username", "followersCount",
+                                                               "followingCount"])
             user_list.append(current_user)
 
         return user_list, response.meta.get("previous_token", ""), response.meta.get("next_token", "")
 
-    def get_follower_and_store(self, user_id: int, pagination_token: str | None = None, max_results: int = 1000):
+    def get_follower_and_store(self, user_id: int, pagination_token: str | None = None, max_results: int = 1000) -> str:
         user_list, previous_token, next_token = \
-            self.get_user_followers(user_id=user_id, max_results=max_results, pagination_token=pagination_token)
-
+            self.get_user_followers_from_twitter(user_id=user_id, max_results=max_results,
+                                                 pagination_token=pagination_token, should_store=True)
         self.db_handler.store_follow_account_info(user_id, previous_token, next_token)
-        for user in user_list:
-            self.db_handler.store_user_info(user, should_remove_optional_data=True)
-
         return next_token
 
     def start_fetching_followers(self, user_id: int, max_results: int = 1000,
@@ -81,16 +84,14 @@ class TwitterClient:
         if next_token == "":
             next_token = None
         i = 0
-        while True and (max_iteration is None or i < max_iteration):
-            if not self.shouldFetchFollowers:
+        while max_iteration is None or i < max_iteration:
+            if not self.shouldFetchFollowers or next_token is None or next_token == "":
                 break
             next_token = self.get_follower_and_store(user_id=user_id, max_results=max_results,
                                                      pagination_token=next_token)
-            print("Received List of Followers...")
+            print(f"Received List of Followers : {i}")
             i += 1
             time.sleep(66)  # Keep it 66 seconds to maintain 15 / 15 min request limit.
-            if next_token is None or next_token == "":
-                break
 
     def like_and_retweet(self, tweet_id: int | str, should_like, should_retweet=False,
                          should_quote_tweet=False, quote_text=""):
@@ -107,34 +108,40 @@ class TwitterClient:
         if should_unretweet:
             self.client.unretweet(tweet_id)
 
-    def follow_user(self, user_id: int | None = None, username: str | None = None, user_data: UserData | None = None,
-                    threshold: int | None = None):
-        if threshold is not None:
-            if user_data is None:
-                user_data = self.get_user_details(user_id=user_id, username=username)
-
-            user_id = user_data.userId
-            if user_data.followersCount > threshold:
-                return False
-
+    def follow_user(self, user_id: int | None = None, username: str | None = None):
         if user_id is None:
-            user_id = self.get_user_details(user_id=user_id, username=username).userId
-
+            user_id = self.get_user_details_from_twitter(user_id=user_id, username=username).userId
         self.client.follow_user(target_user_id=user_id)
         return True
 
-    def start_following_users(self, max_iteration: int | None = None, threshold: int | None = None):
+    def start_following_users(self, max_iteration: int | None = None, min_followers: int = 0,
+                              max_followers: int = sys.maxsize, min_following: int = 0, end_time: float = 0):
         if not self.shouldFollowUsers:
             return
-        user_list = self.db_handler.get_never_followed_users(max_followers_threshold=threshold)
+        elif end_time == 0:
+            end_time = time.time() + (23 * 60 * 60)
+        find_doc = {
+            "didFollow": {"$in": [None, False]},
+            "followersCount": {
+                "$lte": max_followers,
+                "$gte": min_followers
+            },
+            "followingCount": {
+                "$gte": min_following
+            }
+        }
+
+        user_list = self.db_handler.get_user_from_find_doc(find_doc)
         i = 0
         for user in user_list:
+            if (time.time() >= end_time) or (not self.shouldFollowUsers):
+                return
             user["didFollow"] = True
             user["areFollowing"] = True
             user["followTime"] = time.time()
             user = UserData.initialize_from_object(user)
-            if self.follow_user(user_id=user.userId, threshold=threshold, user_data=user):
-                self.db_handler.store_user_info(user)
+            if self.follow_user(user_id=user.userId):
+                self.db_handler.store_user_info(user, ["didFollow", "areFollowing", "followTime"])
                 i += 1
             if max_iteration is not None and i >= max_iteration:
                 break
@@ -145,4 +152,5 @@ class TwitterClient:
             time.sleep(70)
 
     def unfollow_user(self, user_id):
+        # TODO : Update database
         self.client.unfollow_user(target_user_id=user_id)

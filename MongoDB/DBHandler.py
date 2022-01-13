@@ -15,28 +15,31 @@ class DBHandler:
     def get_user(self, user_id: int | None = None, username: str | None = None) -> UserData | None:
         if user_id is not None:
             response = self.database["UserData"].find_one({"userId": user_id})
-            return UserData(response["userId"], response["username"],
-                            response["followersCount"], response["followingCount"],
-                            response["didFollow"], response["areFollowing"],
-                            response["followTime"])
+            return UserData(response["userId"], response["username"], response["followersCount"],
+                            response["followingCount"], response.get("foundThrough", 0),
+                            response.get("didFollow", False), response.get("areFollowing", False),
+                            response.get("followTime", 0), response.get("didTag", False))
         elif username is not None:
             response = self.database["UserData"].find_one({"username": username})
-            return UserData(response["userId"], response["username"],
-                            response["followersCount"], response["followingCount"],
-                            response["didFollow"], response["areFollowing"],
-                            response["followTime"])
+            return UserData(response["userId"], response["username"], response["followersCount"],
+                            response["followingCount"], response.get("foundThrough", 0),
+                            response.get("didFollow", False), response.get("areFollowing", False),
+                            response.get("followTime", 0), response.get("didTag", False))
         else:
             return None
 
-    def store_user_info(self, user_data: UserData, should_remove_optional_data: bool = False):
+    def store_user_info(self, user_data: UserData, keys_to_store: list[str] | str = "all"):
         find_user_object = {
             "userId": user_data.userId
         }
-        data_object = copy.deepcopy(user_data.__dict__)
-        if should_remove_optional_data:
-            del data_object["didFollow"]
-            del data_object["areFollowing"]
-            del data_object["followTime"]
+
+        data_object = {}
+        if keys_to_store == "all":
+            data_object = copy.deepcopy(user_data)
+        else:
+            for key in keys_to_store:
+                data_object[key] = user_data.__dict__[key]
+
         store_user_object = {
             "$set": data_object
         }
@@ -72,10 +75,5 @@ class DBHandler:
 
         self.database["FollowAccounts"].update_one(find_document, operation_doc, upsert=True)
 
-    def get_never_followed_users(self, max_followers_threshold: int | None = None):
-        find_doc = {
-            "didFollow": {"$in": [None, False]}
-        }
-        if max_followers_threshold is not None:
-            find_doc["followersCount"] = {"$lte": max_followers_threshold}
+    def get_user_from_find_doc(self, find_doc: object):
         return self.database["UserData"].find(find_doc)

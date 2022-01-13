@@ -27,7 +27,9 @@ MongoDB: -
 <li><code>user_access_key</code></li>
 <li><code>user_access_secret</code></li>
 <li><code>followUserId</code></li>
-<li><code>followersThreshold</code></li>
+<li><code>minFollowersCount</code></li>
+<li><code>maxFollowersCount</code></li>
+<li><code>minFollowingCount</code></li>
 </ul>
 
 # How to run: -
