@@ -91,7 +91,8 @@ class TwitterClient:
             next_token = None
         i = 0
         while max_iteration is None or i < max_iteration:
-            if (time.time() >= end_time) or not self.shouldFetchFollowers or next_token is None or next_token == "":
+            if (time.time() >= end_time) or not self.shouldFetchFollowers or \
+                    (i != 0 and (next_token is None or next_token == "")):
                 break
             next_token = self.get_follower_and_store(user_id=user_id, max_results=max_results,
                                                      pagination_token=next_token)

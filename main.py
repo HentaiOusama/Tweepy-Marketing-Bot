@@ -77,17 +77,17 @@ def driver_function():
     thread2 = None
     thread3 = None
 
-    if threads_to_run["1"]:
+    if threads_to_run.get("1", False):
         thread1 = threading.Thread(target=continuous_follower)
         thread1.start()
-    if threads_to_run["2"]:
+    if threads_to_run.get("2", False):
         user_id = int(os.environ.get("followUserId", 0))
         if user_id != 0:
             thread2 = threading.Thread(target=tCli.start_fetching_followers, args=[user_id], kwargs={
                 "end_time": scriptEndTime
             })
             thread2.start()
-    if threads_to_run["3"]:
+    if threads_to_run.get("3", False):
         found_through_id = int(os.environ.get("followUserId", 0))
         if found_through_id != 0:
             thread3 = threading.Thread(target=continuous_tagger)
