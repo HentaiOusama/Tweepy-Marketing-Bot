@@ -159,13 +159,16 @@ class TwitterClient:
             time.sleep(70)
 
     def send_tag_tweet(self, tweet_message: str, user_list):
+        print("Sending Tag Tweet")
         try:
-            self.client.create_tweet(text=tweet_message)  # TODO : Complete this...
+            self.client.create_tweet(text=tweet_message)
 
             for u in user_list:
                 u["tagCount"] = 0 if u.get("tagCount") is None else (u["tagCount"] + 1)
                 save_user = UserData.initialize_from_object(u)
                 self.db_handler.store_user_info(save_user, ["userId", "tagCount"])
+
+            time.sleep(7.5)  # Keep it 20 to maintain 50 / 15 min request limit
         except Exception as err:
             print(f"Error while sending tag tweet : {str(err)}")
 
@@ -214,7 +217,6 @@ class TwitterClient:
 
             if max_iteration is not None and i >= max_iteration:
                 break
-            time.sleep(20)  # Keep it 20 to maintain 50 / 15 min request limit
 
         if len(current_users) > 0:
             self.send_tag_tweet(tweet_message=current_message, user_list=current_users)
