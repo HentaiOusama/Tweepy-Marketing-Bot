@@ -20,12 +20,16 @@ class TwitterClient:
         )
         self.shouldFetchFollowers = True
         self.shouldFollowUsers = True
+        self.shouldTagUsers = True
 
     def set_should_fetch_followers(self, value: bool) -> None:
         self.shouldFetchFollowers = value
 
     def set_should_follow_users(self, value: bool) -> None:
         self.shouldFollowUsers = value
+
+    def set_should_tag_users(self, value: bool) -> None:
+        self.shouldTagUsers = value
 
     def get_user_details_from_twitter(self, user_id: int | None = None, username: str | None = None,
                                       search_db: bool = True) -> UserData:
@@ -62,7 +66,7 @@ class TwitterClient:
                                     user.public_metrics["following_count"], user_id)
             if should_store:
                 self.db_handler.store_user_info(current_user, ["userId", "username", "followersCount",
-                                                               "followingCount"])
+                                                               "followingCount", "foundThrough"])
             user_list.append(current_user)
 
         return user_list, response.meta.get("previous_token", ""), response.meta.get("next_token", "")
@@ -75,9 +79,11 @@ class TwitterClient:
         return next_token
 
     def start_fetching_followers(self, user_id: int, max_results: int = 1000,
-                                 max_iteration: int | None = None):
+                                 max_iteration: int | None = None, end_time: float = 0):
         if not self.shouldFetchFollowers:
             return
+        elif end_time == 0:
+            end_time = time.time() + (23 * 60 * 60)
         print(f"Follower Fetch Request for {user_id}")
         account_info = self.db_handler.get_follow_account_info(user_id=user_id)
         next_token = account_info.get("nextToken") if account_info is not None else None
@@ -85,7 +91,7 @@ class TwitterClient:
             next_token = None
         i = 0
         while max_iteration is None or i < max_iteration:
-            if not self.shouldFetchFollowers or next_token is None or next_token == "":
+            if (time.time() >= end_time) or not self.shouldFetchFollowers or next_token is None or next_token == "":
                 break
             next_token = self.get_follower_and_store(user_id=user_id, max_results=max_results,
                                                      pagination_token=next_token)
@@ -114,8 +120,8 @@ class TwitterClient:
         self.client.follow_user(target_user_id=user_id)
         return True
 
-    def start_following_users(self, max_iteration: int | None = None, min_followers: int = 0,
-                              max_followers: int = sys.maxsize, min_following: int = 0, end_time: float = 0):
+    def bulk_follow_users(self, max_iteration: int | None = None, min_followers: int = 0,
+                          max_followers: int = sys.maxsize, min_following: int = 0, end_time: float = 0):
         if not self.shouldFollowUsers:
             return
         elif end_time == 0:
@@ -130,8 +136,8 @@ class TwitterClient:
                 "$gte": min_following
             }
         }
-
         user_list = self.db_handler.get_user_from_find_doc(find_doc)
+
         i = 0
         for user in user_list:
             if (time.time() >= end_time) or (not self.shouldFollowUsers):
@@ -149,6 +155,71 @@ class TwitterClient:
 
         if i == 0:
             print("No users to follow...")
+            time.sleep(70)
+
+    def send_tag_tweet(self, tweet_message: str, user_list):
+        try:
+            self.client.create_tweet(text=tweet_message)  # TODO : Complete this...
+
+            for u in user_list:
+                u["tagCount"] = 0 if u.get("tagCount") is None else (u["tagCount"] + 1)
+                save_user = UserData.initialize_from_object(u)
+                self.db_handler.store_user_info(save_user, ["userId", "tagCount"])
+        except Exception as err:
+            print(f"Error while sending tag tweet : {str(err)}")
+
+    def bulk_tag_users(self, base_message: str, max_len: int, should_prepend: bool = True, found_through: int = 0,
+                       max_iteration: int | None = None, min_followers: int = 0, max_followers: int = sys.maxsize,
+                       min_following: int = 0, max_prev_tag: int = 0, end_time: float = 0):
+        if not self.shouldTagUsers:
+            return
+        elif end_time == 0:
+            end_time = time.time() + (23 * 60 * 60)
+        find_doc = {
+            "didTag": {"$not": {"$gt": max_prev_tag}},
+            "followersCount": {
+                "$lte": max_followers,
+                "$gte": min_followers
+            },
+            "followingCount": {
+                "$gte": min_following
+            }
+        }
+        if found_through != 0:
+            find_doc["foundThrough"] = found_through
+        user_list = self.db_handler.get_user_from_find_doc(find_doc)
+
+        current_message = f"\n{base_message}" if should_prepend else f"{base_message}\n"
+        current_length = len(base_message)
+        current_users = []
+        i = 0
+        for user in user_list:
+            if (time.time() >= end_time) or (not self.shouldTagUsers):
+                return
+
+            selected_username = f"@{user.username} "
+            selected_length = len(selected_username)
+            if (current_length + selected_length) < max_len:
+                current_message = f"{selected_username}{current_message}" if should_prepend \
+                    else f"{current_message}{selected_username}"
+                current_length += selected_length
+                current_users.append(user)
+            else:
+                self.send_tag_tweet(tweet_message=current_message, user_list=current_users)
+                current_message = f"{selected_username}\n{base_message}" if should_prepend \
+                    else f"{base_message}\n{selected_username}"
+                current_length = len(base_message)
+                current_users = [user]
+
+            if max_iteration is not None and i >= max_iteration:
+                break
+            time.sleep(20)  # Keep it 20 to maintain 50 / 15 min request limit
+
+        if len(current_users) > 0:
+            self.send_tag_tweet(tweet_message=current_message, user_list=current_users)
+
+        if i == 0:
+            print("No users to tag...")
             time.sleep(70)
 
     def unfollow_user(self, user_id):

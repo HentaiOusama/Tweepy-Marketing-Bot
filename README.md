@@ -1,4 +1,4 @@
-<h1 align="center">Sample Application To Demonstrate Use of Tweepy</h1>
+<h1 align="center">Bot For Twitter Marketing powered by Tweepy</h1>
 
 ## Setup: -
 
@@ -26,12 +26,15 @@ MongoDB: -
 <ul>
 <li><code>user_access_key</code></li>
 <li><code>user_access_secret</code></li>
+<li><code>threadsToRun</code> (String array with quotes)</li>
 <li><code>followUserId</code></li>
+<li><code>foundThroughUserId</code></li>
 <li><code>minFollowersCount</code></li>
 <li><code>maxFollowersCount</code></li>
 <li><code>minFollowingCount</code></li>
+<li><code>baseTagMessage</code></li>
 </ul>
 
 # How to run: -
 
-Run the main.py file using the command `python main.py` from the root directory.
+Run the main.py file using the command `python main.py` in the root directory.

@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import threading
@@ -35,48 +36,77 @@ def initialize_client():
 
 
 def continuous_follower():
-    end_time = time.time() + (23 * 60 * 60)  # Current Time + 23 hours
     min_followers_count = int(os.environ.get("minFollowersCount", 0))
     max_followers_count = int(os.environ.get("maxFollowersCount", sys.maxsize))
     min_following_count = int(os.environ.get("minFollowingCount", 0))
 
     print("Starting to follow users from database")
-    while time.time() < end_time:
+    while time.time() < scriptEndTime:
         try:
-            tCli.start_following_users(min_followers=min_followers_count, max_followers=max_followers_count,
-                                       min_following=min_following_count, end_time=end_time)
+            tCli.bulk_follow_users(min_followers=min_followers_count, max_followers=max_followers_count,
+                                   min_following=min_following_count, end_time=scriptEndTime)
         except Exception as err:
             print(err)
-    tCli.set_should_fetch_followers(False)
-    tCli.set_should_follow_users(False)
 
 
-def early_use_function():
-    user_id = os.environ.get("followUserId", None)
-    if user_id is not None:
-        user_id = int(user_id)
-    else:
-        return
+def continuous_tagger():
+    found_through_user_id = int(os.environ.get("foundThroughUserId", 0))
+    tag_message = str(os.environ.get("baseTagMessage", ""))
+    min_followers_count = int(os.environ.get("minFollowersCount", 0))
+    max_followers_count = int(os.environ.get("maxFollowersCount", sys.maxsize))
+    min_following_count = int(os.environ.get("minFollowingCount", 0))
 
-    # thread1 = threading.Thread(target=tCli.start_fetching_followers, args=[user_id])
-    thread2 = threading.Thread(target=continuous_follower)
-    # print("Stating Both Tasks...")
-    # thread1.start()
-    thread2.start()
+    print("Starting to tag users from database")
+    while time.time() < scriptEndTime:
+        try:
+            tCli.bulk_tag_users(base_message=tag_message, max_len=270, found_through=found_through_user_id,
+                                min_followers=min_followers_count, max_followers=max_followers_count,
+                                min_following=min_following_count, end_time=scriptEndTime)
+        except Exception as err:
+            print(err)
 
-    while thread2.is_alive():
+
+def driver_function():
+    run_list = json.loads(str(os.environ.get("threadsToRun", [])))
+    threads_to_run = {}
+
+    for key in run_list:
+        threads_to_run[key] = True
+
+    thread1 = None
+    thread2 = None
+    thread3 = None
+
+    if threads_to_run["1"]:
+        thread1 = threading.Thread(target=continuous_follower)
+        thread1.start()
+    if threads_to_run["2"]:
+        user_id = int(os.environ.get("followUserId", 0))
+        if user_id != 0:
+            thread2 = threading.Thread(target=tCli.start_fetching_followers, args=[user_id], kwargs={
+                "end_time": scriptEndTime
+            })
+            thread2.start()
+    if threads_to_run["3"]:
+        found_through_id = int(os.environ.get("followUserId", 0))
+        if found_through_id != 0:
+            thread3 = threading.Thread(target=continuous_tagger)
+            thread3.start()
+
+    while (thread1 is not None and thread1.is_alive()) or (thread2 is not None and thread2.is_alive()) \
+            or (thread3 is not None and thread3.is_alive()):
         time.sleep(15 * 60)
 
-    # if thread1.is_alive():
-    #     thread1.join()
-    print("Both Tasks Ended...")
+    print("All Tasks Ended...")
 
 
 if __name__ == '__main__':
+    scriptStartTime = time.time()
+    scriptEndTime = scriptStartTime + (23 * 60 * 60)
     tCli = initialize_client()
 
     # Write your code here
-    early_use_function()
+    driver_function()
 
     print("Waiting 2.5 secs before exit...")
     time.sleep(2.5)

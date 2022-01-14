@@ -18,13 +18,13 @@ class DBHandler:
             return UserData(response["userId"], response["username"], response["followersCount"],
                             response["followingCount"], response.get("foundThrough", 0),
                             response.get("didFollow", False), response.get("areFollowing", False),
-                            response.get("followTime", 0), response.get("didTag", False))
+                            response.get("followTime", 0), response.get("tagCount", 0))
         elif username is not None:
             response = self.database["UserData"].find_one({"username": username})
             return UserData(response["userId"], response["username"], response["followersCount"],
                             response["followingCount"], response.get("foundThrough", 0),
                             response.get("didFollow", False), response.get("areFollowing", False),
-                            response.get("followTime", 0), response.get("didTag", False))
+                            response.get("followTime", 0), response.get("tagCount", 0))
         else:
             return None
 
