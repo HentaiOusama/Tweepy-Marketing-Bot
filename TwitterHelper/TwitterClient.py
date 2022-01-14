@@ -198,7 +198,7 @@ class TwitterClient:
             if (time.time() >= end_time) or (not self.shouldTagUsers):
                 return
 
-            selected_username = f"@{user.username} "
+            selected_username = f"@{user.get('username')} "
             selected_length = len(selected_username)
             if (current_length + selected_length) < max_len:
                 current_message = f"{selected_username}{current_message}" if should_prepend \
