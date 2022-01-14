@@ -182,7 +182,10 @@ class TwitterClient:
         elif end_time == 0:
             end_time = time.time() + (23 * 60 * 60)
         find_doc = {
-            "didTag": {"$not": {"$gt": max_prev_tag}},
+            "$or": [
+                {"tagCount": None},
+                {"tagCount": {"$lte": max_prev_tag}}
+            ],
             "followersCount": {
                 "$lte": max_followers,
                 "$gte": min_followers
