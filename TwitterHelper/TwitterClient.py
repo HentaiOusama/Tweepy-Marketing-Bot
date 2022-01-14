@@ -1,5 +1,6 @@
 import sys
 import time
+import traceback
 
 import tweepy
 
@@ -98,7 +99,7 @@ class TwitterClient:
                                                      pagination_token=next_token)
             print(f"Received List of Followers : {i}")
             i += 1
-            time.sleep(66)  # Keep it 66 seconds to maintain 15 / 15 min request limit.
+            time.sleep(240)  # Keep it under 5 / 20 min request limit.
 
     def like_and_retweet(self, tweet_id: int | str, should_like, should_retweet=False,
                          should_quote_tweet=False, quote_text=""):
@@ -152,11 +153,11 @@ class TwitterClient:
                 i += 1
             if max_iteration is not None and i >= max_iteration:
                 break
-            time.sleep(20)  # Keep it 20 to maintain 50 / 15 min request limit
+            time.sleep(600)  # Keep it under 144 / 1 day request limit
 
         if i == 0:
             print("No users to follow...")
-            time.sleep(70)
+            time.sleep(600)
 
     def send_tag_tweet(self, tweet_message: str, user_list):
         print("Sending Tag Tweet")
@@ -168,9 +169,10 @@ class TwitterClient:
                 save_user = UserData.initialize_from_object(u)
                 self.db_handler.store_user_info(save_user, ["userId", "tagCount"])
 
-            time.sleep(7.5)  # Keep it 20 to maintain 50 / 15 min request limit
+            time.sleep(90)  # Keep it under 960 / 1 day request limit
         except Exception as err:
             print(f"Error while sending tag tweet : {str(err)}")
+            print(traceback.format_tb(err.__traceback__))
 
     def bulk_tag_users(self, base_message: str, max_len: int, should_prepend: bool = True, found_through: int = 0,
                        max_iteration: int | None = None, min_followers: int = 0, max_followers: int = sys.maxsize,
@@ -223,7 +225,7 @@ class TwitterClient:
 
         if i == 0:
             print("No users to tag...")
-            time.sleep(70)
+            time.sleep(90)
 
     def unfollow_user(self, user_id):
         # TODO : Update database

@@ -51,8 +51,8 @@ class DBHandler:
         if found_document:
             return {
                 "userId": user_id,
-                "nextToken": found_document["nextToken"],
-                "previousToken": found_document["previousToken"]
+                "nextToken": found_document.get("nextToken"),
+                "previousToken": found_document.get("previousToken")
             }
         else:
             return None
