@@ -66,7 +66,7 @@ def continuous_tagger():
             print(err)
 
 
-def driver_function():
+def client_driver_function():
     run_list = json.loads(str(os.environ.get("threadsToRun", [])))
     threads_to_run = {}
 
@@ -101,12 +101,22 @@ def driver_function():
 
 
 if __name__ == '__main__':
+    mode = int(os.environ.get("mode", 0))
     scriptStartTime = time.time()
     scriptEndTime = scriptStartTime + (23 * 60 * 60)
-    tCli = initialize_client()
 
     # Write your code here
-    driver_function()
+    if mode == 1:
+        # Write your code for TwitterAPI below...
+        pass
+    elif mode == 2:
+        tCli = initialize_client()
+        # Write your code for TwitterClient below...
+        client_driver_function()
+        pass
+    elif mode == 3:
+        # Write your code for TwitterManualMode below...
+        pass
 
     print("Waiting 2.5 secs before exit...")
     time.sleep(2.5)

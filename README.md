@@ -1,40 +1,191 @@
-<h1 align="center">Bot For Twitter Marketing powered by Tweepy</h1>
+<h1 align="center">Twitter Marketing Bot</h1>
+
+## Information: -
+
+There are three modes for this bot.
+<ol type="1">
+<li><code>Twitter API</code> : Uses twitter's API v1.1</li>
+<li><code>Twitter Client</code> : Uses twitter's API v2.0</li>
+<li><code>Manual Mode</code> : Uses selenium. It opens web browser and perform operation by finding HTML elements.</li>
+</ol>
 
 ## Setup: -
 
 Set up the following environment variables: -
 
-### (Required)
+(`R` => Required, `O` => Optional / Depend on actions, `NR` => Not Required)
+<table border="1" align="center">
+<tr>
+<th align="center">Variable Name</th>
+<th align="center">Value Format</th>
+<th align="center">Twitter API</th>
+<th align="center">Twitter Client</th>
+<th align="center">Manual Mode</th>
+</tr>
+<tr>
+<td><code>mode</code></td>
+<td align="center"><code>int</code></td>
+<td align="center">R &nbsp;&nbsp;( = 1)</td>
+<td align="center">R &nbsp;&nbsp;( = 2)</td>
+<td align="center">R &nbsp;&nbsp;( = 3)</td>
+</tr>
+<tr>
+<td><code>twitterUsername</code></td>
+<td align="center"><code>str</code></td>
+<td align="center">NR</td>
+<td align="center">NR</td>
+<td align="center">R</td>
+</tr>
+<tr>
+<td><code>twitterPassword</code></td>
+<td align="center"><code>str</code></td>
+<td align="center">NR</td>
+<td align="center">NR</td>
+<td align="center">R</td>
+</tr>
+<tr>
+<td><code>consumer_key</code></td>
+<td align="center"><code>str</code></td>
+<td align="center">R</td>
+<td align="center">R</td>
+<td align="center">NR</td>
+</tr>
+<tr>
+<td><code>consumer_key_secret</code></td>
+<td align="center"><code>str</code></td>
+<td align="center">R</td>
+<td align="center">R</td>
+<td align="center">NR</td>
+</tr>
+<tr>
+<td><code>bearer_token</code></td>
+<td align="center"><code>str</code></td>
+<td align="center">R</td>
+<td align="center">R</td>
+<td align="center">NR</td>
+</tr>
+<tr>
+<td><code>user_access_key</code></td>
+<td align="center"><code>str</code></td>
+<td align="center">O</td>
+<td align="center">O</td>
+<td align="center">NR</td>
+</tr>
+<tr>
+<td><code>user_access_secret</code></td>
+<td align="center"><code>str</code></td>
+<td align="center">O</td>
+<td align="center">O</td>
+<td align="center">NR</td>
+</tr>
+<tr>
+<td><code>mongo_username</code></td>
+<td align="center"><code>str</code></td>
+<td align="center">R</td>
+<td align="center">R</td>
+<td align="center">R</td>
+</tr>
+<tr>
+<td><code>mongo_password</code></td>
+<td align="center"><code>str</code></td>
+<td align="center">R</td>
+<td align="center">R</td>
+<td align="center">R</td>
+</tr>
+<tr>
+<td><code>mongo_cluster_name</code></td>
+<td align="center"><code>str</code></td>
+<td align="center">R</td>
+<td align="center">R</td>
+<td align="center">R</td>
+</tr>
+<tr>
+<td><code>mongo_database_name</code></td>
+<td align="center"><code>str</code></td>
+<td align="center">R</td>
+<td align="center">R</td>
+<td align="center">R</td>
+</tr>
+<tr>
+<td><code>threadsToRun</code></td>
+<td align="center"><code>["int", ...]</code></td>
+<td align="center">R</td>
+<td align="center">R</td>
+<td align="center">R</td>
+</tr>
+<tr>
+<td><code>followUserId</code></td>
+<td align="center"><code>int</code></td>
+<td align="center">O</td>
+<td align="center">O</td>
+<td align="center">NR</td>
+</tr>
+<tr>
+<td><code>foundThroughUserId</code></td>
+<td align="center"><code>int</code></td>
+<td align="center">O</td>
+<td align="center">O</td>
+<td align="center">NR</td>
+</tr>
+<tr>
+<td><code>minFollowersCount</code></td>
+<td align="center"><code>int</code></td>
+<td align="center">O</td>
+<td align="center">O</td>
+<td align="center">O</td>
+</tr>
+<tr>
+<td><code>maxFollowersCount</code></td>
+<td align="center"><code>int</code></td>
+<td align="center">O</td>
+<td align="center">O</td>
+<td align="center">O</td>
+</tr>
+<tr>
+<td><code>minFollowingCount</code></td>
+<td align="center"><code>int</code></td>
+<td align="center">O</td>
+<td align="center">O</td>
+<td align="center">O</td>
+</tr>
+<tr>
+<td><code>baseTagMessage</code></td>
+<td align="center"><code>str</code></td>
+<td align="center">O</td>
+<td align="center">O</td>
+<td align="center">O</td>
+</tr>
+</table>
 
-Twitter API: -
-<ul>
-<li><code>consumer_key</code></li>
-<li><code>consumer_key_secret</code></li>
-<li><code>bearer_token</code></li>
-</ul>
-
-MongoDB: -
-<ul>
-<li><code>mongo_username</code></li>
-<li><code>mongo_password</code></li>
-<li><code>mongo_cluster_name</code></li>
-<li><code>mongo_database_name</code></li>
-</ul>
-
-### (Optional)
-
-<ul>
-<li><code>user_access_key</code></li>
-<li><code>user_access_secret</code></li>
-<li><code>threadsToRun</code> (String array with quotes)</li>
-<li><code>followUserId</code></li>
-<li><code>foundThroughUserId</code></li>
-<li><code>minFollowersCount</code></li>
-<li><code>maxFollowersCount</code></li>
-<li><code>minFollowingCount</code></li>
-<li><code>baseTagMessage</code></li>
-</ul>
-
-# How to run: -
+## How to run: -
 
 Run the main.py file using the command `python main.py` in the root directory.
+
+## Purpose of Each Thread: -
+
+<table border="1" align="center">
+<tr>
+<th align="center">Thread Number</th>
+<th align="center">Twitter API</th>
+<th align="center">Twitter Client</th>
+<th align="center">Manual Mode</th>
+</tr>
+<tr>
+<td align="center">1</td>
+<td align="center">-</td>
+<td align="center">Fetch followers of <code>followUserId</code></td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="center">-</td>
+<td align="center">Follow users stored in DB</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="center">-</td>
+<td align="center">Tag users with <code>baseTagMessage</code></td>
+<td align="center">-</td>
+</tr>
+</table>
