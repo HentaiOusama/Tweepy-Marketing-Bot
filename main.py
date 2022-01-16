@@ -36,6 +36,7 @@ def initialize_client():
 
 
 def continuous_follower():
+    found_through_user_id = int(os.environ.get("foundThroughUserId", 0))
     min_followers_count = int(os.environ.get("minFollowersCount", 0))
     max_followers_count = int(os.environ.get("maxFollowersCount", sys.maxsize))
     min_following_count = int(os.environ.get("minFollowingCount", 0))
@@ -43,8 +44,9 @@ def continuous_follower():
     print("Starting to follow users from database")
     while time.time() < scriptEndTime:
         try:
-            tCli.bulk_follow_users(min_followers=min_followers_count, max_followers=max_followers_count,
-                                   min_following=min_following_count, end_time=scriptEndTime)
+            tCli.bulk_follow_users(found_through=found_through_user_id, min_followers=min_followers_count,
+                                   max_followers=max_followers_count, min_following=min_following_count,
+                                   end_time=scriptEndTime)
         except Exception as err:
             print(err)
 

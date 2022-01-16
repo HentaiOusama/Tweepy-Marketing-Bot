@@ -122,8 +122,9 @@ class TwitterClient:
         self.client.follow_user(target_user_id=user_id)
         return True
 
-    def bulk_follow_users(self, max_iteration: int | None = None, min_followers: int = 0,
-                          max_followers: int = sys.maxsize, min_following: int = 0, end_time: float = 0):
+    def bulk_follow_users(self, found_through: int = 0, min_followers: int = 0, max_followers: int = sys.maxsize,
+                          min_following: int = 0, max_following: int = sys.maxsize, max_iteration: int = sys.maxsize,
+                          end_time: float = 0):
         if not self.shouldFollowUsers:
             return
         elif end_time == 0:
@@ -135,9 +136,12 @@ class TwitterClient:
                 "$gte": min_followers
             },
             "followingCount": {
+                "$lte": max_following,
                 "$gte": min_following
             }
         }
+        if found_through != 0:
+            find_doc["foundThrough"] = found_through
         user_list = self.db_handler.get_user_from_find_doc(find_doc)
 
         i = 0
@@ -151,7 +155,7 @@ class TwitterClient:
             if self.follow_user(user_id=user.userId):
                 self.db_handler.store_user_info(user, ["didFollow", "areFollowing", "followTime"])
                 i += 1
-            if max_iteration is not None and i >= max_iteration:
+            if i >= max_iteration:
                 break
             time.sleep(600)  # Keep it under 144 / 1 day request limit
 
