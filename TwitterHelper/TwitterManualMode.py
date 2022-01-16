@@ -51,6 +51,7 @@ class TwitterManualMode:
         pass_input.send_keys(Keys.RETURN)
         time.sleep(self.FWD.timeouts.page_load)
 
+    # Not used, but it is an alternative.
     def click_follow_button(self, button_x_path: str) -> bool:
         return self.FWD.execute_script(script="let getElementByXpath = (path) => {return document.evaluate(path, "
                                               "document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, "
@@ -72,10 +73,13 @@ class TwitterManualMode:
         following_count = self.str_to_int(following_elem.get_attribute('innerHTML'))
 
         if min_followers <= followers_count <= max_followers and min_following <= following_count <= max_following:
-            if self.click_follow_button(button_x_path=f"//div[@aria-label='Follow @{username}' "
-                                                      "and ./div/span/span[text()='Follow']]"):
+            try:
+                follow_button = self.FWD.find_element(by=By.XPATH,
+                                                      value=f"//div[@aria-label='Follow @{username}' "
+                                                            "and ./div/span/span[text()='Follow']]")
+                follow_button.click()
                 return True, "Success"
-            else:
+            except NoSuchElementException:
                 return False, "Already Following"
         else:
             return False, "User doesn't satisfy the constrains"
