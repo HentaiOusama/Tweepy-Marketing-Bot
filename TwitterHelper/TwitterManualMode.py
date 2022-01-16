@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 
@@ -8,13 +9,17 @@ from selenium.webdriver.common.keys import Keys
 
 
 class TwitterManualMode:
-    def __init__(self, username, password):
+    def __init__(self, firefox_profile_path: str = "",
+                 username: str = str(os.environ.get("twitterUsername")),
+                 password: str = str(os.environ.get("twitterPassword"))):
         self.username = username
         self.password = password
-        self.FWD = webdriver.Firefox()  # FWD = Firefox Web Driver
-        self.FWD.set_page_load_timeout(5)
-        self.FWD.get("https://twitter.com/")
-        time.sleep(2)
+        self.shouldFollowUsers = True
+        if firefox_profile_path == "":
+            self.FWD = webdriver.Firefox()
+        else:
+            self.FWD = webdriver.Firefox(firefox_profile=firefox_profile_path)  # FWD = Firefox Web Driver
+        self.FWD.set_page_load_timeout(7.5)
 
     @staticmethod
     def str_to_int(val: str) -> int:
@@ -38,13 +43,19 @@ class TwitterManualMode:
         email_input.clear()
         email_input.send_keys(self.username)
         email_input.send_keys(Keys.RETURN)
-        time.sleep(3)
+        time.sleep(5)
         pass_input = self.FWD.find_element(by=By.XPATH,
                                            value="//input[@autocomplete='current-password']")
         pass_input.clear()
         pass_input.send_keys(self.password)
         pass_input.send_keys(Keys.RETURN)
         time.sleep(self.FWD.timeouts.page_load)
+
+    def click_follow_button(self, button_x_path: str) -> bool:
+        return self.FWD.execute_script(script="let getElementByXpath = (path) => {return document.evaluate(path, "
+                                              "document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, "
+                                              "null).singleNodeValue;}; try {getElementByXpath(\"" + button_x_path +
+                                              "\").click(); return true;} catch {return false;}")
 
     def follow_user(self, username: str, min_followers: int = 0, max_followers: int = sys.maxsize,
                     min_following: int = 0, max_following: int = sys.maxsize) -> tuple[bool, str]:
@@ -61,14 +72,43 @@ class TwitterManualMode:
         following_count = self.str_to_int(following_elem.get_attribute('innerHTML'))
 
         if min_followers <= followers_count <= max_followers and min_following <= following_count <= max_following:
-            try:
-                follow_button = self.FWD.find_element(by=By.XPATH,
-                                                      value=f"//div[@aria-label='Follow @{username}' "
-                                                            "and ./div/span/span[text()='Follow']]")
-                follow_button.click()
-                time.sleep(1)
+            if self.click_follow_button(button_x_path=f"//div[@aria-label='Follow @{username}' "
+                                                      "and ./div/span/span[text()='Follow']]"):
                 return True, "Success"
-            except NoSuchElementException:
+            else:
                 return False, "Already Following"
         else:
             return False, "User doesn't satisfy the constrains"
+
+    def bulk_follow_users(self, min_followers: int = 0, max_followers: int = sys.maxsize, min_following: int = 0,
+                          max_following: int = sys.maxsize, max_iteration: int = sys.maxsize, end_time: float = 0):
+        if not self.shouldFollowUsers:
+            return
+        elif end_time == 0:
+            end_time = time.time() + (23 * 60 * 60)
+
+        i = 0
+        input_file = open("TwitterHelper/FilesForManualMode/Input/ToFollowList.txt", "r")
+        output_file = open("TwitterHelper/FilesForManualMode/Output/FollowedList.txt", "a")
+
+        for username in input_file:
+            if (time.time() >= end_time) or (not self.shouldFollowUsers):
+                return
+            username = username.strip()
+            if username != "":
+                success, message = self.follow_user(username=username, min_followers=min_followers,
+                                                    max_followers=max_followers, min_following=min_following,
+                                                    max_following=max_following)
+                print_msg = f"{username} {success} {message}"
+                output_file.write(print_msg + "\n")
+                print(print_msg)
+                i += 1
+            else:
+                break
+            if i >= max_iteration:
+                break
+            time.sleep(50)
+
+        print("Processed all usernames in Input File")
+        output_file.close()
+        input_file.close()

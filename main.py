@@ -7,6 +7,7 @@ import time
 from MongoDB.DBHandler import DBHandler
 from TwitterHelper.TwitterAPI import TwitterAPI
 from TwitterHelper.TwitterClient import TwitterClient
+from TwitterHelper.TwitterManualMode import TwitterManualMode
 
 
 def get_mongo_keys():
@@ -35,23 +36,24 @@ def initialize_client():
     return t_cli
 
 
-def continuous_follower():
+def cli_continuous_follower():
     found_through_user_id = int(os.environ.get("foundThroughUserId", 0))
     min_followers_count = int(os.environ.get("minFollowersCount", 0))
     max_followers_count = int(os.environ.get("maxFollowersCount", sys.maxsize))
     min_following_count = int(os.environ.get("minFollowingCount", 0))
+    max_following_count = int(os.environ.get("maxFollowingCount", sys.maxsize))
 
     print("Starting to follow users from database")
     while time.time() < scriptEndTime:
         try:
             tCli.bulk_follow_users(found_through=found_through_user_id, min_followers=min_followers_count,
                                    max_followers=max_followers_count, min_following=min_following_count,
-                                   end_time=scriptEndTime)
+                                   max_following=max_following_count, end_time=scriptEndTime)
         except Exception as err:
             print(err)
 
 
-def continuous_tagger():
+def cli_continuous_tagger():
     found_through_user_id = int(os.environ.get("foundThroughUserId", 0))
     tag_message = str(os.environ.get("baseTagMessage", ""))
     min_followers_count = int(os.environ.get("minFollowersCount", 0))
@@ -80,7 +82,7 @@ def client_driver_function():
     thread3 = None
 
     if threads_to_run.get("1", False):
-        thread1 = threading.Thread(target=continuous_follower)
+        thread1 = threading.Thread(target=cli_continuous_follower)
         thread1.start()
     if threads_to_run.get("2", False):
         user_id = int(os.environ.get("followUserId", 0))
@@ -92,11 +94,47 @@ def client_driver_function():
     if threads_to_run.get("3", False):
         found_through_id = int(os.environ.get("followUserId", 0))
         if found_through_id != 0:
-            thread3 = threading.Thread(target=continuous_tagger)
+            thread3 = threading.Thread(target=cli_continuous_tagger)
             thread3.start()
 
     while (thread1 is not None and thread1.is_alive()) or (thread2 is not None and thread2.is_alive()) \
             or (thread3 is not None and thread3.is_alive()):
+        time.sleep(15 * 60)
+
+    print("All Tasks Ended...")
+
+
+def man_continuous_follower():
+    min_followers_count = int(os.environ.get("minFollowersCount", 0))
+    max_followers_count = int(os.environ.get("maxFollowersCount", sys.maxsize))
+    min_following_count = int(os.environ.get("minFollowingCount", 0))
+    max_following_count = int(os.environ.get("maxFollowingCount", sys.maxsize))
+
+    print("Starting to follow users from -> TwitterHelper/FilesForManualMode/Input/ToFollowList.txt")
+    try:
+        manualBot.bulk_follow_users(min_followers=min_followers_count, max_followers=max_followers_count,
+                                    min_following=min_following_count, max_following=max_following_count,
+                                    end_time=scriptEndTime)
+    except Exception as err:
+        print(err)
+
+
+def manual_mode_driver_function():
+    run_list = json.loads(str(os.environ.get("threadsToRun", [])))
+    threads_to_run = {}
+
+    for key in run_list:
+        threads_to_run[key] = True
+
+    thread1 = None
+    thread2 = None
+    thread3 = None
+
+    if threads_to_run.get("1", False):
+        thread1 = threading.Thread(target=man_continuous_follower)
+        thread1.start()
+
+    while thread1 is not None and thread1.is_alive():
         time.sleep(15 * 60)
 
     print("All Tasks Ended...")
@@ -118,6 +156,9 @@ if __name__ == '__main__':
         pass
     elif mode == 3:
         # Write your code for TwitterManualMode below...
+        manualBot = TwitterManualMode(firefox_profile_path="C:\\Users\\jainh\\AppData\\Roaming\\Mozilla\\Firefox"
+                                                           "\\Profiles\\8m0mw6j0.default-release")
+        manual_mode_driver_function()
         pass
 
     print("Waiting 2.5 secs before exit...")
