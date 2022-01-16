@@ -63,7 +63,7 @@ def cli_continuous_tagger():
     print("Starting to tag users from database")
     while time.time() < scriptEndTime:
         try:
-            tCli.bulk_tag_users(base_message=tag_message, max_len=270, found_through=found_through_user_id,
+            tCli.bulk_tag_users(base_message=tag_message, max_len=275, found_through=found_through_user_id,
                                 min_followers=min_followers_count, max_followers=max_followers_count,
                                 min_following=min_following_count, end_time=scriptEndTime)
         except Exception as err:
@@ -119,6 +119,16 @@ def man_continuous_follower():
         print(err)
 
 
+def man_continuous_tagger():
+    tag_message = str(os.environ.get("baseTagMessage", ""))
+
+    print("Starting to tag users from database")
+    try:
+        manualBot.bulk_tag_users(base_message=tag_message, max_len=275, end_time=scriptEndTime)
+    except Exception as err:
+        print(err)
+
+
 def manual_mode_driver_function():
     run_list = json.loads(str(os.environ.get("threadsToRun", [])))
     threads_to_run = {}
@@ -128,13 +138,16 @@ def manual_mode_driver_function():
 
     thread1 = None
     thread2 = None
-    thread3 = None
 
+    # TODO : Initialize multiple Manual Mode Objects to run multiple threads at same time.
     if threads_to_run.get("1", False):
         thread1 = threading.Thread(target=man_continuous_follower)
         thread1.start()
+    elif threads_to_run.get("2", False):
+        thread2 = threading.Thread(target=man_continuous_tagger)
+        thread2.start()
 
-    while thread1 is not None and thread1.is_alive():
+    while (thread1 is not None and thread1.is_alive()) or (thread2 is not None and thread2.is_alive()):
         time.sleep(15 * 60)
 
     print("All Tasks Ended...")

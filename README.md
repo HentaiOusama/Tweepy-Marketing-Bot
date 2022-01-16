@@ -196,7 +196,7 @@ Run the main.py file using the command `python main.py` in the root directory.
 <td align="center">2</td>
 <td align="center">-</td>
 <td align="center">Fetch followers of <code>followUserId</code> and store in DB</td>
-<td align="center">-</td>
+<td align="center">Tag users with <code>username</code> specified in <code>TwitterHelper/Input/ToTagList.txt</code> with <code>baseTagMessage</code></td>
 </tr>
 <tr>
 <td align="center">3</td>

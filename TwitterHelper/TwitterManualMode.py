@@ -15,6 +15,7 @@ class TwitterManualMode:
         self.username = username
         self.password = password
         self.shouldFollowUsers = True
+        self.shouldTagUsers = True
         if firefox_profile_path == "":
             self.FWD = webdriver.Firefox()
         else:
@@ -113,6 +114,77 @@ class TwitterManualMode:
                 break
             time.sleep(50)
 
-        print("Processed all usernames in Input File")
+        print("Processed all follow usernames in Input File")
+        output_file.close()
+        input_file.close()
+
+    def create_new_tweet(self, tweet_message: str):
+        try:
+            tweet_button = self.FWD.find_element(by=By.XPATH,
+                                                 value="//a[@href='/compose/tweet' and @aria-label='Tweet']")
+            tweet_button.click()
+            time.sleep(1)
+            tweet_input = self.FWD.find_element(by=By.XPATH,
+                                                value="//div[@aria-label='Tweet text' and @role='textbox' and "
+                                                      "@class='notranslate public-DraftEditor-content' and "
+                                                      "@aria-controls='typeaheadDropdownWrapped-1']")
+
+            tweet_input.send_keys(tweet_message)
+            tweet_button = self.FWD.find_element(by=By.XPATH,
+                                                 value="//div[@data-testid='toolBar']/div/div["
+                                                       "@data-testid='tweetButton']")
+            tweet_button.click()
+            return True, "Success"
+        except NoSuchElementException:
+            return False, "Selenium Error"
+
+    def bulk_tag_users(self, base_message: str, max_len: int, should_prepend: bool = True,
+                       max_iteration: int = sys.maxsize, end_time: float = 0):
+        if not self.shouldTagUsers:
+            return
+        elif end_time == 0:
+            end_time = time.time() + (23 * 60 * 60)
+
+        input_file = open("TwitterHelper/FilesForManualMode/Input/ToTagList.txt", "r")
+        output_file = open("TwitterHelper/FilesForManualMode/Output/TaggedList.txt", "a")
+        self.FWD.get("https://twitter.com")
+
+        current_message = f"\n{base_message}" if should_prepend else f"{base_message}\n"
+        current_length = len(base_message)
+        current_users = []
+        i = 0
+        for username in input_file:
+            if (time.time() >= end_time) or (not self.shouldTagUsers):
+                return
+
+            username = username.strip()
+            selected_username = f"@{username} "
+            selected_length = len(selected_username)
+            if (current_length + selected_length) < max_len:
+                current_message = f"{selected_username}{current_message}" if should_prepend \
+                    else f"{current_message}{selected_username}"
+                current_length += selected_length
+                current_users.append(username)
+            else:
+                success, message = self.create_new_tweet(tweet_message=current_message)
+                print_text = f"{current_users} {success} {message}"
+                print(print_text)
+                output_file.write(f"{print_text}\n")
+                time.sleep(60)
+                current_message = f"{selected_username}\n{base_message}" if should_prepend \
+                    else f"{base_message}\n{selected_username}"
+                current_length = len(base_message)
+                current_users = [username]
+
+            if i >= max_iteration:
+                break
+
+        if len(current_message) > (len(base_message) + 1):
+            success, message = self.create_new_tweet(tweet_message=current_message)
+            print_text = f"{current_users} {success} {message}"
+            print(print_text)
+            output_file.write(f"{print_text}\n")
+
+        print("Processed all tag usernames in Input File")
         output_file.close()
         input_file.close()

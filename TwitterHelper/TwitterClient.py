@@ -179,7 +179,7 @@ class TwitterClient:
             print(traceback.format_tb(err.__traceback__))
 
     def bulk_tag_users(self, base_message: str, max_len: int, should_prepend: bool = True, found_through: int = 0,
-                       max_iteration: int | None = None, min_followers: int = 0, max_followers: int = sys.maxsize,
+                       max_iteration: int = sys.maxsize, min_followers: int = 0, max_followers: int = sys.maxsize,
                        min_following: int = 0, max_prev_tag: int = 0, end_time: float = 0):
         if not self.shouldTagUsers:
             return
@@ -224,7 +224,7 @@ class TwitterClient:
                 current_length = len(base_message)
                 current_users = [user]
 
-            if max_iteration is not None and i >= max_iteration:
+            if i >= max_iteration:
                 break
 
         if len(current_users) > 0:
