@@ -106,6 +106,7 @@ class TwitterManualMode:
                                                     max_following=max_following)
                 print_msg = f"{username} {success} {message}"
                 output_file.write(print_msg + "\n")
+                output_file.flush()
                 print(print_msg)
                 i += 1
             else:
@@ -169,6 +170,7 @@ class TwitterManualMode:
                 print_text = f"{current_users} {success} {message}"
                 print(print_text)
                 output_file.write(f"{print_text}\n")
+                output_file.flush()
                 time.sleep(90)
                 current_message = f"{selected_username}\n{base_message}" if should_prepend \
                     else f"{base_message}\n{selected_username}"
