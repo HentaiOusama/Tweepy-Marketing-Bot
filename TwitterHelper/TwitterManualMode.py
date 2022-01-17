@@ -126,8 +126,7 @@ class TwitterManualMode:
             time.sleep(1)
             tweet_input = self.FWD.find_element(by=By.XPATH,
                                                 value="//div[@aria-label='Tweet text' and @role='textbox' and "
-                                                      "@class='notranslate public-DraftEditor-content' and "
-                                                      "@aria-controls='typeaheadDropdownWrapped-1']")
+                                                      "@class='notranslate public-DraftEditor-content']")
 
             tweet_input.send_keys(tweet_message)
             tweet_button = self.FWD.find_element(by=By.XPATH,
@@ -170,7 +169,7 @@ class TwitterManualMode:
                 print_text = f"{current_users} {success} {message}"
                 print(print_text)
                 output_file.write(f"{print_text}\n")
-                time.sleep(60)
+                time.sleep(90)
                 current_message = f"{selected_username}\n{base_message}" if should_prepend \
                     else f"{base_message}\n{selected_username}"
                 current_length = len(base_message)
