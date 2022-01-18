@@ -121,12 +121,20 @@ class TwitterManualMode:
 
     def create_new_tweet(self, tweet_message: str):
         try:
-            tweet_button = self.FWD.find_element(by=By.XPATH,
-                                                 value="//a[@href='/compose/tweet' and @aria-label='Tweet']")
-            tweet_button.click()
-            time.sleep(1)
+            try:
+                self.FWD.find_element(by=By.XPATH,
+                                      value="//div[@class='css-1dbjc4n r-11z020y r-1p0dtai r-1d2f490 r-1xcajam "
+                                            "r-zchlnj r-ipm5af']")
+                print("Existing Modal Overlay Detected")
+            except NoSuchElementException:
+                tweet_button = self.FWD.find_element(by=By.XPATH,
+                                                     value="//a[@href='/compose/tweet' and @aria-label='Tweet']")
+                tweet_button.click()
+                time.sleep(3)
+
             tweet_input = self.FWD.find_element(by=By.XPATH,
-                                                value="//div[@aria-label='Tweet text' and @role='textbox' and "
+                                                value="//div[@aria-labelledby='modal-header']//*/div["
+                                                      "@aria-label='Tweet text' and @role='textbox' and "
                                                       "@class='notranslate public-DraftEditor-content']")
 
             tweet_input.send_keys(tweet_message)
@@ -135,7 +143,8 @@ class TwitterManualMode:
                                                        "@data-testid='tweetButton']")
             tweet_button.click()
             return True, "Success"
-        except NoSuchElementException:
+        except NoSuchElementException as err:
+            print(err)
             return False, "Selenium Error"
 
     def bulk_tag_users(self, base_message: str, max_len: int, should_prepend: bool = True,
@@ -171,7 +180,7 @@ class TwitterManualMode:
                 print(print_text)
                 output_file.write(f"{print_text}\n")
                 output_file.flush()
-                time.sleep(90)
+                time.sleep(72)
                 current_message = f"{selected_username}\n{base_message}" if should_prepend \
                     else f"{base_message}\n{selected_username}"
                 current_length = len(base_message)
